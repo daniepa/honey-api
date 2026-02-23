@@ -1,0 +1,28 @@
+{
+  "name": "honey-api",
+  "displayName": "Honey API",
+  "description": "Simple API client inside VS Code",
+  "version": "0.0.1",
+  "publisher": "TUO_PUBLISHER",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onCommand:honey-api.open"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "honey-api.open",
+        "title": "Honey API: Open"
+      }
+    ]
+  },
+  "scripts": {},
+  "devDependencies": {},
+  "keywords": ["api", "rest", "http", "postman"],
+  "license": "MIT",
+  "icon": "icon.png"
+}

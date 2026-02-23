@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.vscode/
+*.vsix
+coverage/
+.DS_Store
