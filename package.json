@@ -2,12 +2,14 @@
   "name": "honey-api",
   "displayName": "Honey API",
   "description": "Simple API client inside VS Code",
-  "version": "0.0.1",
-  "publisher": "TUO_PUBLISHER",
+  "version": "1.0.0",
+  "publisher": "itadevsupport",
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onCommand:honey-api.open"
   ],
@@ -22,7 +24,16 @@
   },
   "scripts": {},
   "devDependencies": {},
-  "keywords": ["api", "rest", "http", "postman"],
+  "keywords": [
+    "api",
+    "rest",
+    "http",
+    "postman"
+  ],
   "license": "MIT",
-  "icon": "icon.png"
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daniepa/honey-api.git"
+  }
 }
