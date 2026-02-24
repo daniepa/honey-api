@@ -10,7 +10,7 @@ Test your REST APIs effortlessly, organize your requests, and stay in your codin
 
 ---
 
-## 🚀 Latest Updates (v1.0.2)
+## 🚀 Latest Updates (v1.0.3)
 
 ### Improvements
 - Collections are now **global** (shared across all VS Code windows)

@@ -2,7 +2,7 @@
   "name": "honey-api",
   "displayName": "Honey API",
   "description": "Simple API client inside VS Code",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "itadevsupport",
   "engines": {
     "vscode": "^1.80.0"

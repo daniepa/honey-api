@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.2] - 2026-02-24
+## [1.0.3] - 2026-02-24
 
 ### 🛠 Fix
 - Fixed response panel scroll (now correctly scrollable)

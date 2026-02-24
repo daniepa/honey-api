@@ -384,7 +384,7 @@ textarea {
 </div>
 
 <div class="header">
-  <h1>🍯Honey <span style="color:white">API</span> 🐝 <span style="font-size:12px;">v 1.0.2</span></h1>
+  <h1>🍯Honey <span style="color:white">API</span> 🐝 <span style="font-size:12px;">v 1.0.3</span></h1>
 </div>
 
 <div class="main">
@@ -522,6 +522,10 @@ document.getElementById('sendBtn').onclick = () => {
     body: currentRequest.body
   });
 };
+
+closeBtn.onclick = () => {
+  hideMessage();
+}
 
 /* ---------------- RENDER ---------------- */
 
