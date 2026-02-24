@@ -1,9 +1,16 @@
-# Change Log
+# Changelog
 
-All notable changes to the "api-client-tool" extension will be documented in this file.
+## [1.0.2] - 2026-02-24
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+### 🛠 Fix
+- Fixed response panel scroll (now correctly scrollable)
+- Fixed request deletion not updating UI immediately
+- Fixed collection deletion not clearing related requests from UI
 
-## [Unreleased]
+### ⚡ Improvements
+- Switched storage from workspace to global (collections now shared across VS Code)
+- Automatic cleanup of old workspace data
+- Improved UI state synchronization
 
-- Initial release
+### 🎯 UX
+- Added warning message when trying to send a request without selecting one

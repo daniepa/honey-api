@@ -12,14 +12,20 @@ function activate(context) {
         { enableScripts: true }
       );
 
-      // init storage
-      if (!context.workspaceState.get('collections')) {
-        context.workspaceState.update('collections', []);
+      // cancelliamo eventuali dati workspace legacy (la versione 1.0.0 usava i workspace e non global quidni ripuliamo dati sporchi)
+      context.workspaceState.update('collections', undefined);
+
+      /* init storage (dalla versione 1.0.0 usiamo il golbal state per fare in modo che
+        qualsiasi finestra di VSC venga aperta, contenga collezioni e metodi creati in precedenza)
+        (sono stati sostituite le occorrenze di workspaceState con globalState)
+      */
+      if (!context.globalState.get('collections')) {
+        context.globalState.update('collections', []);
       }
 
       panel.webview.onDidReceiveMessage(async message => {
 
-        let collections = context.workspaceState.get('collections') || [];
+        let collections = context.globalState.get('collections') || [];
 
         if (message.command === 'sendRequest') {
           const result = await makeRequest(message);
@@ -48,7 +54,7 @@ function activate(context) {
             };
 
             collections.push(newCollection);
-            context.workspaceState.update('collections', collections);
+            context.globalState.update('collections', collections);
 
             panel.webview.postMessage({
               command: 'collections',
@@ -65,15 +71,16 @@ function activate(context) {
           vscode.window.showInputBox({ prompt: 'New collection name', value: c.name }).then(name => {
             if (!name) return;
             c.name = name;
-            context.workspaceState.update('collections', collections);
+            context.globalState.update('collections', collections);
             panel.webview.postMessage({ command: 'collections', data: collections });
           });
         }
 
         if (message.command === 'deleteCollection') {
           collections = collections.filter(c => c.id !== message.id);
-          context.workspaceState.update('collections', collections);
-          panel.webview.postMessage({ command: 'collections', data: collections });
+          await context.globalState.update('collections', collections);
+          // in v.1.0.1 aggiornato anche selectCollectionId e selectRequestId a null per evitare che dopo l'eliminazione di una collection, venga evidenziata come se fosse ancora selezionata (dato che non esiste più)
+          panel.webview.postMessage({ command: 'collections', data: collections, selectCollectionId: null, selectRequestId: null });
         }
 
         if (message.command === 'addRequest') {
@@ -98,7 +105,7 @@ function activate(context) {
               return c;
             });
 
-            context.workspaceState.update('collections', collections);
+            context.globalState.update('collections', collections);
 
             panel.webview.postMessage({
               command: 'collections',
@@ -117,7 +124,7 @@ function activate(context) {
               vscode.window.showInputBox({ prompt: 'New request name', value: r.name }).then(name => {
                 if (!name) return;
                 r.name = name;
-                context.workspaceState.update('collections', collections);
+                context.globalState.update('collections', collections);
                 panel.webview.postMessage({
                   command: 'collections',
                   data: collections,
@@ -137,8 +144,9 @@ function activate(context) {
             }
             return c;
           });
-          context.workspaceState.update('collections', collections);
-          panel.webview.postMessage({ command: 'collections', data: collections });
+          await context.globalState.update('collections', collections);
+          // in v.1.0.1 aggiornato anche selectRequestId a null per evitare che dopo l'eliminazione di una request, venga evidenziata come se fosse ancora selezionata (dato che non esiste più)
+          panel.webview.postMessage({ command: 'collections', data: collections, selectCollectionId: message.collectionId, selectRequestId: null });
         }
 
         if (message.command === 'updateRequest') {
@@ -150,10 +158,10 @@ function activate(context) {
             }
             return c;
           });
-          context.workspaceState.update('collections', collections);
+          context.globalState.update('collections', collections);
           panel.webview.postMessage({ command: 'collections', data: collections });
         }
-
+        
       });
 
       panel.webview.html = getHtml();
@@ -171,16 +179,17 @@ async function makeRequest({ url, method, headers, body }) {
       try { options.headers = JSON.parse(headers); } catch { return { status: 0, body: 'Headers JSON non valido' }; }
     }
     if (method !== 'GET' && body) {
-      try { options.body = JSON.stringify(JSON.parse(body));
-        if (!options.headers['Content-Type']) options.headers['Content-Type']='application/json';
-      } catch { return { status: 0, body: 'Body JSON non valido'}; }
+      try {
+        options.body = JSON.stringify(JSON.parse(body));
+        if (!options.headers['Content-Type']) options.headers['Content-Type'] = 'application/json';
+      } catch { return { status: 0, body: 'Body JSON non valido' }; }
     }
 
     const res = await fetch(url, options);
     const text = await res.text();
     return { status: res.status, body: text };
 
-  } catch(err) { return { status: 0, body: err.message }; }
+  } catch (err) { return { status: 0, body: err.message }; }
 }
 function getHtml() {
   return `
@@ -286,6 +295,7 @@ select, button.primary {
   color: white;
   border: none;
   border-radius: 5px;
+  color: #3c3b39;
 }
 
 /* INPUT */
@@ -335,9 +345,11 @@ textarea {
   flex: 1;
   background-color: #363636;
   padding: 10px;
-  overflow: auto;
+  /* aggiunto scroll e max-height in 1.0.1 dato che response lunghe non erano scrollabili */
+  overflow: scroll;
   color: #fff;
   margin-top: 10px;
+  max-height: 450px;
 }
 
 #addCollectionBtn, #addRequestBtn {
@@ -346,13 +358,33 @@ textarea {
   border-radius: 50%;
 }
 
+#alertDiv {
+  font-size: 18px;
+  background-color: #d69346;
+  min-width: 200px;
+  min-height: 80px;
+  border-radius: 10px;
+  position: absolute;
+  top: 200px;
+  padding: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+}
+
 </style>
 </head>
 
 <body>
 
+<!-- alert message -->
+<div id="alertDiv">
+  <span id="alertText"></span>
+  <button id="closeBtn">✖️</button>
+</div>
+
 <div class="header">
-  <h1>🍯Honey <span style="color:white">API</span> 🐝 <span style="font-size:12px;">v 1.0</span></h1>
+  <h1>🍯Honey <span style="color:white">API</span> 🐝 <span style="font-size:12px;">v 1.0.2</span></h1>
 </div>
 
 <div class="main">
@@ -375,7 +407,7 @@ textarea {
   <!-- CENTER -->
   <div class="col center">
 
-    <div style="display:flex; gap:10px;">
+    <div style="display:flex;flex-direction:row;">
       <select id="method" style="width:20%;">
         <option>GET</option>
         <option>POST</option>
@@ -434,6 +466,10 @@ const bodyEl = document.getElementById('body');
 const statusEl = document.getElementById('status');
 const outEl = document.getElementById('out');
 
+const alertDiv = document.getElementById('alertDiv');
+const alertText = document.getElementById('alertText');
+const closeBtn = document.getElementById('closeBtn');
+
 /* ---------------- TABS ---------------- */
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -460,7 +496,12 @@ document.getElementById('addRequestBtn').onclick = () => {
 };
 
 document.getElementById('sendBtn').onclick = () => {
-  if (!currentRequest) return;
+  // v.1.0.1: se non c'è una request selezionata, non faccio partire la richiesta e mostro un alert
+  //if (!currentRequest) return;
+  if (!currentCollection || !currentRequest) {
+    showMessage('🐝💭Before to click Send button please create a collection, create a request and then you can select it and click Send..🍯');
+    return;
+  }
 
   currentRequest.method = methodEl.value;
   currentRequest.url = urlEl.value;
@@ -526,7 +567,13 @@ function render() {
     collectionsEl.appendChild(li);
   });
 
-  if (!currentCollection) return;
+  // v.1.0.1: se non c'è una collection selezionata, non mostro la sezione delle request
+  // if (!currentCollection) return;
+  if (!currentCollection) {
+    requestsSection.style.display = 'none';
+    requestsEl.innerHTML = '';
+    return;
+  }
 
   requestsSection.style.display = 'block';
   requestsEl.innerHTML = '';
@@ -597,6 +644,15 @@ function selectRequest(id) {
   render();
 }
 
+function showMessage(msg) {
+  alertText.textContent = msg;
+  alertDiv.style.display = 'block';
+}
+  
+function hideMessage() {
+  alertDiv.style.display = 'none';
+}
+
 /* ---------------- MESSAGES ---------------- */
 
 window.addEventListener('message', event => {
@@ -606,12 +662,19 @@ window.addEventListener('message', event => {
   if (msg.command === 'collections') {
     collections = msg.data;
 
-    if (msg.selectCollectionId) {
-      currentCollection = collections.find(c => c.id === msg.selectCollectionId);
-    }
+    // v.1.0.1 gestione collection: all'eliminazione devono sparire anche le request sottostanti
+    const selectCollectionId = msg.selectCollectionId ?? null;
+    const selectRequestId = msg.selectRequestId ?? null;
 
-    if (msg.selectRequestId && currentCollection) {
-      currentRequest = currentCollection.requests.find(r => r.id === msg.selectRequestId);
+    if (selectCollectionId === null)
+      currentCollection = null;
+    else
+      currentCollection = collections.find(c => c.id === selectCollectionId);
+
+    if (selectRequestId === null) 
+      currentRequest = null;
+    else if (currentCollection) {
+      currentRequest = currentCollection.requests.find(r => r.id === selectRequestId);
     }
 
     render();
@@ -644,6 +707,6 @@ vscode.postMessage({ command: 'getCollections' });
 `;
 }
 
-function deactivate(){}
+function deactivate() { }
 
-module.exports={activate,deactivate};
+module.exports = { activate, deactivate };

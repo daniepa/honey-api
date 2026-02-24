@@ -9,6 +9,22 @@
 Test your REST APIs effortlessly, organize your requests, and stay in your coding flow — no external tools needed.
 
 ---
+
+## 🚀 Latest Updates (v1.0.2)
+
+### Improvements
+- Collections are now **global** (shared across all VS Code windows)
+- Automatic cleanup of legacy workspace data
+
+### Fixes
+- Response panel now scrolls correctly
+- Deleting a request updates the UI immediately
+- Deleting a collection now removes all related requests from the UI
+
+### UX Enhancements
+- Warning message when trying to send a request without selecting one
+
+---
 <img src="images/example.jpg" width="800" />
 
 ## 🌟 Why Use Honey API?
